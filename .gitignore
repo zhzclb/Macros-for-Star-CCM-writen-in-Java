@@ -1,0 +1,14 @@
+build/
+nbproject/
+dist/
+build.xml
+manifest.mf
+*.sim
+*.sim~
+*.simh
+*.jar
+*.stp
+*.x_b
+*.txt
+*.csv
+*.png
