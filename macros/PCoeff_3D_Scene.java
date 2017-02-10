@@ -5,7 +5,6 @@
  * 2017
  * star v11.06
  */
-package macroutils;
 
 import macroutils.*;
 import star.common.*;
