@@ -9,19 +9,19 @@
 import java.util.*;
 import macroutils.*;
 import star.common.*;
-import star.meshing.MeshPartFactory;
 import star.vis.*;
 
 public class DFBI_Boats extends StarMacro {
     /* STATIC PITCH AND HEAVE */
-    double pitch0 = 2; // deg
-    double waterline = 24; // in
+    double pitch0 = -.8; // deg
+    double waterline = 23.9; // in
     
     /* RUN MATRIX */
     double[] speedsForward = {1, 2, 3}; // fps
     double[] speedsAft = {.5, 1, 2}; // fps
     double[] speedsOblique = {.5, 1, 2}; // fps
-    double[] rolls = {0, 3, 6, 9, 12}; // deg
+    double[] staticRolls = {3, 6, 9, 12}; // deg
+    double[] dynRolls = {-6, 6}; // deg
     double[] pitches = {pitch0-2, pitch0-1, pitch0+1, pitch0+2}; // deg
     
     /* BOAT SPECS */
@@ -31,12 +31,12 @@ public class DFBI_Boats extends StarMacro {
     double weight = 12003; // boat weight (lb)
     
     /* DOFs */
-    boolean pitch = false;
-    boolean heave = false;
-    boolean yaw   = false;
-    boolean roll  = false;
-    boolean sway  = false;
-    boolean surge = false;
+    boolean pitchDOF = false;
+    boolean heaveDOF = false;
+    boolean yawDOF   = false;
+    boolean rollDOF  = false;
+    boolean swayDOF  = false;
+    boolean surgeDOF = false;
 
     /* PICTURE IMAGE RES */
     int resx  = 1200;
@@ -55,10 +55,51 @@ public class DFBI_Boats extends StarMacro {
     }
 
     void staticRollStability() {
-        if (mu.check.is.simFile("staticRoll_" + roll)) {
-            break;
+        if (mu.check.is.simFile("staticRoll_")) {
+            return;
         }
-
+        title = "staticRollStability";
+        for (double roll : staticRolls) {
+            run(roll, 0, 0);
+        }
+    }
+    
+    void staticPitchStability() {
+        title = "staticRollStability";
+        for (double pitch : pitches) {
+            run(0, pitch, 0);
+        }
+    }
+    
+    void rollResistance() {
+        title = "rollResistance";
+        yaw = 90.;
+        for (double roll : dynRolls) {
+        run(0, roll, yaw);
+        }
+    }
+    
+    void forwardMotion() {
+        title = "forwardMotion";
+        
+    }
+    
+    void aftMotion() {
+        title = "aftMotion";
+        
+    }
+    
+    void swayMotion() {
+        title = "swayMotion";
+        
+    }
+    
+    void obliqueMotion() {
+        title = "obliqueMotion";
+        
+    }
+    
+    void run(double roll, double pitch, double yaw) {
         initMacro();
         physics();
         mesh();
@@ -68,30 +109,6 @@ public class DFBI_Boats extends StarMacro {
         mu.saveSim();
     }
     
-    void staticPitchStability() {
-        
-    }
-    
-    void rollResistance() {
-        
-    }
-    
-    void forwardMotion() {
-        
-    }
-    
-    void aftMotion() {
-        
-    }
-    
-    void swayMotion() {
-        
-    }
-    
-    void obliqueMotion() {
-        
-    }
-    
     void initMacro() {
         mu = new MacroUtils(getActiveSimulation());
         ud = mu.userDeclarations;
@@ -99,9 +116,8 @@ public class DFBI_Boats extends StarMacro {
         mu.set.userDefault.tessellation(
                 StaticDeclarations.Tessellation.DISTANCE_BIASED);
         ud.defUnitLength = ud.unit_in;
-        
-        // add the geometry from work9fting directory
-        mu.add.geometry.importPart(ud.simTitle + ".x_b");
+        // add the geometry from working directory
+        mu.add.geometry.importPart("geom.x_b");
     }
     
     void physics() {
@@ -256,13 +272,8 @@ public class DFBI_Boats extends StarMacro {
     private MacroUtils mu;
     private UserDeclarations ud;
 
-    Double mfr;
-    PartDisplayer pd1, pd2;
-    ResampledVolumePart reVol;
-    Collection<Part> sections;
-    ScalarDisplayer scd;
-    StreamDisplayer std;
-
+    String title;
+    Double yaw;
 }
     
 

@@ -7,7 +7,11 @@
  * 2017, v11.06
  */
 
+import com.opencsv.CSVReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 import macroutils.*;
 import star.base.report.*;
@@ -15,6 +19,7 @@ import star.common.*;
 import star.vis.*;
 import org.apache.poi.xssf.usermodel.*;
 import org.apache.commons.math3.stat.descriptive.*;
+import org.apache.poi.poifs.filesystem.NPOIFSFileSystem;
 
 public class SS_Internal_Flow extends StarMacro {
 
@@ -29,6 +34,10 @@ public class SS_Internal_Flow extends StarMacro {
         
     public void execute() {
 
+        // get pre-created plane sections
+        sections = getActiveSimulation().getPartManager().getObjects();
+        getActiveSimulation().kill();
+        
         for (String version : versions) {
             for (String flowRate : flowRates) {
                 
@@ -62,14 +71,14 @@ public class SS_Internal_Flow extends StarMacro {
     }
 
     void initMacro(String version, String flowRate) {
-        mu = new MacroUtils(getActiveSimulation());
+        mu = new MacroUtils(new Simulation(version + "_" + flowRate));
         ud = mu.userDeclarations;
+        ud.simTitle = version + "_" + flowRate;        
         if (flowRate.contains(flowRates[0])) {
             mfr = mfrs[0];
         } else {
             mfr = mfrs[1];
         }
-        ud.simTitle = version + "_" + flowRate;
     }
     
     void physics() {
@@ -123,8 +132,6 @@ public class SS_Internal_Flow extends StarMacro {
         if (mu.check.has.solution()) {
             return;
         }
-        // get pre-created plane sections
-        sections = mu.getSimulation().getPartManager().getObjects();
         // choose region and create report for each plane section
         for (Part ps : sections){
             ps.getInputParts().setObjects(mu.get.regions.byREGEX(".*", vo));
@@ -149,6 +156,9 @@ public class SS_Internal_Flow extends StarMacro {
         if (mu.getSimulation().isParallel()) {
             return;
         }
+        // set scene properties
+        ud.defColormap = mu.get.objects.colormap(StaticDeclarations.Colormaps.BLUE_RED);
+        ud.legVis = false;
         // create resampled volume scene
         ud.rvp = (ResampledVolumePart) mu.getSimulation().
                 getPartManager().createResampledVolumePart();
@@ -166,7 +176,7 @@ public class SS_Internal_Flow extends StarMacro {
         
         // create streamline scene
         ud.namedObjects.clear();
-        ud.namedObjects.add(mu.get.regions.byREGEX(".*", vo));
+        ud.namedObjects.add(mu.get.parts.byREGEX(".*", vo));
         ud.namedObjects.add(mu.get.boundaries.byREGEX(ud.bcInlet, vo));
         ud.postStreamlinesTubesWidth = 0.0005;
         ud.scene1 = mu.add.scene.streamline(ud.namedObjects, true, true);
@@ -181,7 +191,7 @@ public class SS_Internal_Flow extends StarMacro {
         
     }
     
-    void output(String version, String flowRate) {
+    void output(String version, String flowRate) throws FileNotFoundException, IOException {
         if (mu.getSimulation().isParallel()) {
             return;
         }
@@ -206,27 +216,51 @@ public class SS_Internal_Flow extends StarMacro {
                     ud.simTitle + " " + vv.getPresentationName(), 
                     resx, resy, vo);
         }        
-        // create pressure drop spreadsheet
+        // update pressure drop results spreadsheet
+        
+        // if results.xlsx is not found then create with headers
+        
+        fs = new NPOIFSFileSystem(new File(ud.simPath + "results.xlsx"));
+        wb = new XSSFWorkbook(fs.getRoot(), true);
+        sheet = wb.getSheet("data");
+        int currentRow = sheet.getLastRowNum() + 1;
+        row = sheet.createRow(currentRow);
+        j = 1;
         for ( Report rep : mu.get.reports.all(vo)) {
             ud.mon = mu.get.monitors.fromReport(rep, vo);
-            ud.mon.export(ud.simPath + "\\temp.csv");
-            File f = new File(ud.simPath + "\\temp.csv");
-            ud.string = mu.io.read.data(f, vo);
-            mu.io.print.msg(ud.string);
+            String fileName = ud.simPath + "\\temp.csv";
+            ud.mon.export(fileName);
+            reader = new CSVReader(new FileReader(fileName));
+            data = reader.readAll();
+            for (i=data.size()-1; i>=data.size()-ud.numToAve; i++) {
+                String[] rowData = data.get(i);
+                stats.addValue(Double.parseDouble(rowData[1]));
+            }
+            if (j != 0) {
+            row.createCell(j).setCellValue(mean - stats.getMean());
+            }
+            mean = stats.getMean();
+            j++;
         }
 
     }
     
     private MacroUtils mu;
     private UserDeclarations ud;
-    Boolean vo = true;
+    boolean vo = true;
 
-    Double mfr;
+    double mfr;
     Collection<Part> sections;
     XSSFWorkbook wb;
-    XSSFSheet sh;
+    XSSFSheet sheet;
     XSSFRow row;
-    
+    NPOIFSFileSystem fs;
+    CSVReader reader;
+    List<String[]> data;
+    int i;
+    int j;
+    SummaryStatistics stats;
+    double mean;
 }
     
 
