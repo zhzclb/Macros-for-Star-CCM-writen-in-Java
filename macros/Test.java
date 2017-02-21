@@ -1,14 +1,90 @@
-import star.common.*;
-import macroutils.*;
+
+/**
+ * Simple steady state internal flow simulation
+ * with streamlines, contours, and total pressure monitors
+ *
+ * @author Andrew Gunderson
+ *
+ * 2017, v11.06
+ */
+
+import java.io.*;
 import java.util.*;
+import macroutils.*;
+import star.base.report.*;
+import star.common.*;
+import star.vis.*;
+import org.apache.commons.math3.stat.descriptive.*;
+import org.apache.poi.ss.usermodel.*;
+import com.opencsv.CSVReader;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import star.base.neo.DoubleVector;
 
 public class Test extends StarMacro {
 
+    String version = "v10";
+    String flowRate = "23Lpm";
+    String[] headers = {"Revision", "A", "B", "C", "D", "E"};
+    Double mfr = 0.389;
+
+    int resx = 1200;
+    int resy = 300;
+
     public void execute() {
-        MacroUtils mu = new MacroUtils(getActiveSimulation());
-        UserDeclarations ud = mu.userDeclarations;
-        ud.mon = mu.get.monitors.fromReport(mu.get.reports.byREGEX("Drag", true), true);
-        ud.mon.export(ud.simPath+"\\fromMonitor.csv");
-        // the above has been tested and works
+
+        try {
+
+            //initMacro(version, flowRate);
+
+            output();
+            
+
+        } catch (Exception ex) {
+            mu.getSimulation().println(ex);
+        }
+
     }
+/*
+    void initMacro(String version, String flowRate) {
+        mu = new MacroUtils(getSimulation());
+        ud = mu.userDeclarations;
+        ud.simTitle = version + "_" + flowRate;
+        as = mu.getSimulation().getSimulationIterator().getAutoSave();
+    }
+*/
+    void output() throws Exception {
+        // create or update pressure drop results spreadsheet
+        String ssTitle = "A:\\CFD_TRs\\TR2017-0106-005_P1_EM\\star\\results.xlsx";
+        wb = new HSSFWorkbook();
+        sheet = wb.createSheet("data");
+        row = sheet.createRow(0);
+        for (i = 0; i < headers.length; i++) {
+            row.createCell(i).setCellValue(headers[i]);
+            out = new FileOutputStream(ssTitle);
+            wb.write(out);
+            out.close();
+        }
+       
+
+    }
+
+    private MacroUtils mu;
+    private UserDeclarations ud;
+    boolean vo = true;
+
+    Collection<Part> sections;
+    List<String[]> data;
+    Workbook wb;
+    Sheet sheet;
+    Row row;
+    CSVReader reader;
+    SummaryStatistics stats;
+    FileOutputStream out;
+    AutoSave as;
+
+    double mean;
+    int i;
+    int j;
+
 }

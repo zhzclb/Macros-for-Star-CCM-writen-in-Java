@@ -14,7 +14,7 @@ import star.vis.*;
 public class DFBI_Boats extends StarMacro {
     /* STATIC PITCH AND HEAVE */
     double pitch0 = -.8; // deg
-    double waterline = 23.9; // in
+    double waterline = 24.2; // in
     
     /* RUN MATRIX */
     double[] speedsForward = {1, 2, 3}; // fps

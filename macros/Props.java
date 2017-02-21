@@ -20,7 +20,7 @@ public class Props extends StarMacro {
         mu = new MacroUtils(getActiveSimulation());
         ud = mu.userDeclarations;
         
-        //mu.set.region.motion(m, r);
+        //mu.set.region.motion(rm, mu.get.regions.byREGEX(".*rotating.*", true));
 
     }
     
