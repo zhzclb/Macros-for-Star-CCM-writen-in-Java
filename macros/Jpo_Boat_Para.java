@@ -40,13 +40,13 @@ public class Jpo_Boat_Para extends StarMacro {
     public void execute() {
 
         initMacro();
-        staticRollStability();
-        staticPitchStability();
+//        staticRollStability();
+//        staticPitchStability();
         rollResistance();
-        forwardMotion();
-        aftMotion();
-        swayMotion();
-        obliqueMotion();
+//        forwardMotion();
+//        aftMotion();
+//        swayMotion();
+//        obliqueMotion();
 
     }
 
@@ -68,7 +68,7 @@ public class Jpo_Boat_Para extends StarMacro {
         title = "rollResistance";
         yaw = 90.;
         for (double roll : dynRolls) {
-            run(0, roll, yaw, 1);
+            run(roll, 0, yaw, 1);
         }
     }
 
@@ -126,7 +126,6 @@ public class Jpo_Boat_Para extends StarMacro {
         if (mu.check.has.volumeMesh()) {
             return;
         }
-
         // set inlet speed
         ud.physCont = mu.get.objects.physicsContinua(".*", vo);
         vwm = ud.physCont.getModelManager().getModel(VofWaveModel.class);

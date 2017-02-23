@@ -23,7 +23,7 @@ public class SS_Internal_Single extends StarMacro {
 
     String version = "v10";
     String flowRate = "23Lpm";
-    String[] headers = {"Revision", "A", "B", "C", "D", "E"};
+    String[] headers = {"Revision", "A", "B", "C", "D", "E", "F"};
     Double mfr = 0.389;
 
     int resx = 1200;
@@ -48,12 +48,13 @@ public class SS_Internal_Single extends StarMacro {
                 solve();
             }
 
-            //if (!mu.getSimulation().isParallel()) {
-//            post();
+            if (!mu.getSimulation().isParallel()) {
+            post();
             output();
-            //}
+            }
 
             mu.saveSim();
+            mu.remove.all();
 
         } catch (Exception ex) {
             mu.getSimulation().println(ex);
@@ -82,6 +83,8 @@ public class SS_Internal_Single extends StarMacro {
         ud.denWater = 1015;
         mu.set.physics.materialProperty(ud.physCont, "water",
                 StaticDeclarations.Vars.VISC, ud.viscWater, ud.unit_Pa_s);
+        mu.set.physics.materialProperty(ud.physCont, "water",
+                StaticDeclarations.Vars.DEN, ud.denWater, ud.unit_kgpm3);
     }
 
     void mesh(String version) {
@@ -176,7 +179,7 @@ public class SS_Internal_Single extends StarMacro {
     }
 
     void output() throws Exception {
-        /*        // read in camera views
+        // read in camera views
         mu.io.read.cameraViews("myCameras.txt");
         // output velo scene
         for (VisView vv : mu.get.cameras.allByREGEX(".*(3|4)", vo)) {
@@ -196,7 +199,7 @@ public class SS_Internal_Single extends StarMacro {
                     ud.simTitle + " " + vv.getPresentationName(),
                     resx, resy, vo);
         }
-         */
+         
         // create or update pressure drop results spreadsheet
         String ssTitle = ud.simPath + "\\results.xls";
         if (!new File(ssTitle).exists()) {

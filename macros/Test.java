@@ -7,7 +7,6 @@
  *
  * 2017, v11.06
  */
-
 import java.io.*;
 import java.util.*;
 import macroutils.*;
@@ -33,40 +32,17 @@ public class Test extends StarMacro {
 
     public void execute() {
 
-        try {
+        initMacro(version, flowRate);
 
-            //initMacro(version, flowRate);
-
-            output();
-            
-
-        } catch (Exception ex) {
-            mu.getSimulation().println(ex);
-        }
-
+        PartManager pm = mu.getSimulation().getPartManager();
+        pm.removeObjects(mu.get.parts.allByREGEX("(?i)^((?!(plane|flow)).)*$", vo));
     }
-/*
+
     void initMacro(String version, String flowRate) {
         mu = new MacroUtils(getSimulation());
         ud = mu.userDeclarations;
         ud.simTitle = version + "_" + flowRate;
         as = mu.getSimulation().getSimulationIterator().getAutoSave();
-    }
-*/
-    void output() throws Exception {
-        // create or update pressure drop results spreadsheet
-        String ssTitle = "A:\\CFD_TRs\\TR2017-0106-005_P1_EM\\star\\results.xlsx";
-        wb = new HSSFWorkbook();
-        sheet = wb.createSheet("data");
-        row = sheet.createRow(0);
-        for (i = 0; i < headers.length; i++) {
-            row.createCell(i).setCellValue(headers[i]);
-            out = new FileOutputStream(ssTitle);
-            wb.write(out);
-            out.close();
-        }
-       
-
     }
 
     private MacroUtils mu;
