@@ -10,9 +10,6 @@ import star.common.*;
 import macroutils.*;
 import star.flow.*;
 import star.kwturb.*;
-import star.material.*;
-import star.multiphase.*;
-import star.segregatedmultiphase.*;
 import star.turbulence.*;
 import star.walldistance.*;
 
@@ -38,16 +35,29 @@ public class Set_Laminar_Run extends StarMacro {
                 TurbulentModel.class));
 
         // enable laminar model
-        //ud.physCont.enable(EulerianMultiPhaseModel.class);
         ud.physCont.enable(LaminarModel.class);
         
+        // set skin friction coeff ref values
+        SkinFrictionCoefficientFunction sfc = 
+                (SkinFrictionCoefficientFunction) 
+                mu.get.objects.fieldFunction("SkinFriction.*", vo);
+        sfc.getReferenceDensity().setValue(ud.denWater);
+        sfc.getReferenceVelocity().setUnits(ud.unit_fps);
+        sfc.getReferenceVelocity().setValue(3.0);
+        
+        // add skin friction average report
+        ud.namedObjects.add(mu.get.boundaries.byREGEX("Hull", vo));
+        ud.rep = mu.add.report.surfaceAverage(ud.namedObjects, 
+                "Cf", sfc, ud.unit_Dimensionless, vo);
+        
         // set stopping, clear, and run
-        mu.get.solver.stoppingCriteria_MaxTime().setMaximumTime(150);
+        mu.get.solver.stoppingCriteria_MaxTime().setMaximumTime(100);
         mu.clear.solution();
         mu.run();
-        mu.io.write.plots();
+        mu.io.say.value("Skin Friction Coeff", 
+                ud.rep.getReportMonitorValue(), vo);
         mu.saveSim(ud.simTitle + "_laminar");
-
+        
     }
 
     MacroUtils mu;

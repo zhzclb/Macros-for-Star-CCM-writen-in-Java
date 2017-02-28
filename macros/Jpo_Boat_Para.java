@@ -25,6 +25,7 @@ public class Jpo_Boat_Para extends StarMacro {
     double waterline = 25.5; // in
 
     /* RUN MATRIX */
+    // vary heave 24.5, 25.5, 26.5
     double[] speedsForward = {1, 2, 3}; // fps
     double[] speedsAft = {.5, 1, 2}; // fps
     double[] speedsSway = {.5, 1, 2}; // fps

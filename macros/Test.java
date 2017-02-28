@@ -34,8 +34,11 @@ public class Test extends StarMacro {
 
         initMacro(version, flowRate);
 
-        PartManager pm = mu.getSimulation().getPartManager();
-        pm.removeObjects(mu.get.parts.allByREGEX("(?i)^((?!(plane|flow)).)*$", vo));
+        ud.Parts = mu.get.parts.allByREGEX("(?i).*flow.*", vo);
+        mu.io.say.objects(ud.Parts, "parts", vo);
+        Collections.sort(ud.Parts);
+        mu.io.say.objects(ud.Parts, "parts", vo);
+
     }
 
     void initMacro(String version, String flowRate) {
