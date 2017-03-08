@@ -22,35 +22,24 @@ import star.base.neo.DoubleVector;
 
 public class Test extends StarMacro {
 
-    String version = "v10";
-    String flowRate = "23Lpm";
-    String[] headers = {"Revision", "A", "B", "C", "D", "E"};
-    Double mfr = 0.389;
-
-    int resx = 1200;
-    int resy = 300;
-
     public void execute() {
-
-        initMacro(version, flowRate);
-
-        ud.Parts = mu.get.parts.allByREGEX("(?i).*flow.*", vo);
-        mu.io.say.objects(ud.Parts, "parts", vo);
-        Collections.sort(ud.Parts);
-        mu.io.say.objects(ud.Parts, "parts", vo);
+        initMacro();
+        
+        MonitorPlot propPlot = (MonitorPlot) mu.get.plots.byREGEX("Prop", vo);
+        propPlot.export(ud.simPath + "\\" + "prop.csv", ",");
+        
 
     }
 
-    void initMacro(String version, String flowRate) {
-        mu = new MacroUtils(getSimulation());
+    void initMacro() {
+        mu = new MacroUtils(getSimulation(), intrusive);
         ud = mu.userDeclarations;
-        ud.simTitle = version + "_" + flowRate;
-        as = mu.getSimulation().getSimulationIterator().getAutoSave();
     }
 
     private MacroUtils mu;
     private UserDeclarations ud;
     boolean vo = true;
+    boolean intrusive = true;
 
     Collection<Part> sections;
     List<String[]> data;

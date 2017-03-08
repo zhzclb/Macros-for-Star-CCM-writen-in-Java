@@ -47,7 +47,7 @@ public class excel extends StarMacro {
             "Prop Thrust",
             "Mean Blade Thrust (lbf)",
             "Max Blade Thrust (lbf)",
-            "Min Blade Thrust (lbf)",            
+            "Min Blade Thrust (lbf)",
             "Prop Torque (lbf-ft)",
             "Mean Blade Torque (lbf-ft)",
             "Max Blade Torque",
@@ -86,8 +86,7 @@ public class excel extends StarMacro {
             0.8746,
             0.8184,
             0.6645,
-            0.6059,
-        };
+            0.6059,};
 
         //----------------------------------------------------------------------
         //----------------------------------------------------------------------
@@ -148,7 +147,7 @@ public class excel extends StarMacro {
             sheet = propWB.createSheet("prop data");
             row = sheet.createRow(0);
             for (i = 0; i < propHeaders.length; i++) {
-                row.createCell(i).setCellValue(propHeaders[i]);  
+                row.createCell(i).setCellValue(propHeaders[i]);
             }
             fileOut = new FileOutputStream(workingDir + propExcelFileName);
             propWB.write(fileOut);
@@ -164,7 +163,7 @@ public class excel extends StarMacro {
             fileOut = new FileOutputStream(workingDir + gcExcelFileName);
             gcWB.write(fileOut);
             fileOut.close();
-            
+
             // Initialize spreadsheet row count (start at 1 to skip header row)
             ssCount = 1;
             // ---------------------------------------------------------------------
@@ -180,7 +179,7 @@ public class excel extends StarMacro {
                 //------------------------------------------------------------------
                 for (j = 0; j < set_trim.length; j++) {
                     trim = set_trim[j];
-                    
+
                     //--------------------------------------------------------------
                     // Loop through all the heights
                     //--------------------------------------------------------------
@@ -194,7 +193,7 @@ public class excel extends StarMacro {
                         //----------------------------------------------------------
                         for (m = 0; m < set_rpm.length; m++) {
                             rpm = set_rpm[m];
-                            
+
                             // Update base filename for current run conditions
                             filename = workingDir + simTitle + "_" + speed + "mph_" + trim + "deg_" + height + "in_" + rpm + "rpm";
                             //--------------------------------------------------
@@ -222,12 +221,12 @@ public class excel extends StarMacro {
                             stats = new SummaryStatistics();
                             reportIterator = 1;
                             for (columnIterator = 5; columnIterator < numPropCol; columnIterator++) {
-                                for (rowIterator = data.size() - 1; rowIterator >= data.size() - numToAve ; rowIterator--) {
+                                for (rowIterator = data.size() - 1; rowIterator >= data.size() - numToAve; rowIterator--) {
                                     String[] array = data.get(rowIterator);
                                     stats.addValue(Double.parseDouble(array[reportIterator]));
-                                    
-                                }                  
-                                if (columnIterator == 12 || columnIterator == 16){
+
+                                }
+                                if (columnIterator == 12 || columnIterator == 16) {
                                     row.createCell(columnIterator).setCellValue(stats.getMean());
                                     row.createCell(columnIterator + 1).setCellValue(stats.getMax());
                                     row.createCell(columnIterator + 2).setCellValue(stats.getMin());
@@ -239,21 +238,21 @@ public class excel extends StarMacro {
                                 reportIterator++;
                             }
                             // Compute prop parameters of interest
-                            SHP = rpm*2*Math.PI/60*row.getCell(15).getNumericCellValue()/550;
-                            J = speed*1.467/(rpm/60*Dprop/12);
-                            KT = row.getCell(7).getNumericCellValue()/(Math.pow(rpm/60,2)*Math.pow(Dprop/12,4)*1.94);
-                            KT_norm = KT/subAreaRatio[meshCount];
-                            KQ = row.getCell(15).getNumericCellValue()/(Math.pow(rpm/60, 2)*Math.pow(Dprop/12, 5)*1.94);
-                            KQ_norm = KQ/subAreaRatio[meshCount];
-                            eta = J/2/Math.PI*KT_norm/KQ_norm;
-                            
+                            SHP = rpm * 2 * Math.PI / 60 * row.getCell(15).getNumericCellValue() / 550;
+                            J = speed * 1.467 / (rpm / 60 * Dprop / 12);
+                            KT = row.getCell(7).getNumericCellValue() / (Math.pow(rpm / 60, 2) * Math.pow(Dprop / 12, 4) * 1.94);
+                            KT_norm = KT / subAreaRatio[meshCount];
+                            KQ = row.getCell(15).getNumericCellValue() / (Math.pow(rpm / 60, 2) * Math.pow(Dprop / 12, 5) * 1.94);
+                            KQ_norm = KQ / subAreaRatio[meshCount];
+                            eta = J / 2 / Math.PI * KT_norm / KQ_norm;
+
                             // Write prop parameters to excel ss
                             row.createCell(columnIterator).setCellValue(SHP);
                             row.createCell(columnIterator + 1).setCellValue(J);
                             row.createCell(columnIterator + 2).setCellValue(KT_norm);
                             row.createCell(columnIterator + 3).setCellValue(KQ_norm);
                             row.createCell(columnIterator + 4).setCellValue(eta);
-                            
+
                             // Save prop excel file
                             fileOut = new FileOutputStream(workingDir + propExcelFileName);
                             propWB.write(fileOut);
@@ -281,7 +280,7 @@ public class excel extends StarMacro {
                             // Compute mean and standard deviation of gc data
                             stats = new SummaryStatistics();
                             for (columnIterator = 1; columnIterator <= numGcReports; columnIterator++) {
-                                for (rowIterator = data.size() - 1; rowIterator >= data.size() - numToAve ; rowIterator--) {
+                                for (rowIterator = data.size() - 1; rowIterator >= data.size() - numToAve; rowIterator--) {
                                     String[] array = data.get(rowIterator);
                                     stats.addValue(Double.parseDouble(array[columnIterator]));
                                 }
@@ -294,9 +293,9 @@ public class excel extends StarMacro {
                             gcWB.write(fileOut);
                             fileOut.close();
                             fs.close();
-                           
+
                             // Update excel data row number
-                            ssCount++;                            
+                            ssCount++;
                         }
                     }
                 }

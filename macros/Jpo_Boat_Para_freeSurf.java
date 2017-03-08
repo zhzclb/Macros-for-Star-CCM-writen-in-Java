@@ -18,7 +18,7 @@ import star.meshing.*;
 import star.vis.*;
 import star.vof.*;
 
-public class Jpo_Boat_Para extends StarMacro {
+public class Jpo_Boat_Para_freeSurf extends StarMacro {
 
     /* STATIC PITCH AND HEAVE */
     double pitch0 = .8; // deg
@@ -153,10 +153,6 @@ public class Jpo_Boat_Para extends StarMacro {
         rcYaw = (RotationControl) tpo.getTransforms().getObject("yaw");
         rcYaw.getAngle().setValue(yaw);
 
-        // set mesh mode to serial and mesh
-        ud.autoMshOp = (AutoMeshOperation) mu.get.mesh.operation("Automated Mesh", vo);
-        ud.autoMshOp.getMesherParallelModeOption().setSelected(
-                MesherParallelModeOption.Type.SERIAL);
         mu.update.volumeMesh();
     }
 
