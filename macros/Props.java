@@ -19,12 +19,17 @@ import star.flow.*;
 import star.meshing.*;
 import star.vof.*;
 import star.motion.*;
+import star.vis.Displayer;
 
 public class Props extends StarMacro {
+
     //--------------------------------------------------------------------------
     // -- USER INPUTS --
     //--------------------------------------------------------------------------
-    boolean linux = false;
+    // NOTE: be sure to go through this script and check that all the strings
+    //       match the object names inside your simulation file (i.e. c-sys,
+    //       boundary names, mesh operation names, etc.)
+    boolean linux = true;
     String rev = "6036_v0";
     double[] subAreaRatio = {
         0.99948,
@@ -36,7 +41,7 @@ public class Props extends StarMacro {
     double dProp = 14.5027; // prop diameter (in)
     double x_prop = 13.19; // distance from prop center to GC center (in)
     //--------------------------------------------------------------------------
-    
+
     String[] headers = {"Revision",
         "Speed (mph)",
         "Trim (deg)",
@@ -49,9 +54,18 @@ public class Props extends StarMacro {
         "Prop Pitch Moment (lbf-ft)",
         "Prop Yaw Moment (lbf-ft)",
         "Prop Thrust",
-        "Blade 1 Thrust (lbf)",
+        "Mean Blade Thrust (lbf)",
+        "Max Blade Thrust (lbf)",
+        "Min Blade Thrust (lbf)",
         "Prop Torque (lbf-ft)",
-        "Blade 1 Torque (lbf-ft)",
+        "Mean Blade Torque (lbf-ft)",
+        "Max Blade Torque",
+        "Min Blade Torque",
+        "SHP",
+        "J",
+        "KT_norm",
+        "KQ_norm",
+        "eta",
         "Gearcase Drag (lbf",
         "Gearcase Lift (lbf)",
         "Gearcase Sideforce (lbf)",
@@ -67,15 +81,15 @@ public class Props extends StarMacro {
     double[] rpms = {3135, 3265.5, 3396, 3526.5, 3657};
     double mfr = .4; // exhaust mass flow rate (kg/s)
     double stepSize = 1.; // degrees per timestep 
-    double revs_init = .03; // number of prop revolutions for initial rpm setting
-    double revs = .03; // number of prop revolutions for subsequent rpms
+    double revs_init = 4; // number of prop revolutions for initial rpm setting
+    double revs = 2; // number of prop revolutions for subsequent rpms
     double trimPoint_z = 43.19; // z distance from trim point to GC center (in)
     double trimPoint_x = 11.1; // x distance from trim point to GC center (in)
     int numPropReports = 10; // number of reports being exported to csv file
     int numTitleCol = 5; // number of columns containing run condition info (speed, trim, etc)
     int numPropCol = numPropReports + numTitleCol + 4;
     int numGcReports = 6; // number of gc reports being exported to csv
-    
+
     public void execute() {
         try {
             initMacro();
@@ -93,12 +107,11 @@ public class Props extends StarMacro {
                             setRpm(rpm);
                             run(speed, height, trim, rpm);
                             exportScene();
-                            exportData(speed, height, trim, rpm);
+                            CreateResultSS(speed, height, trim, rpm);
                         }
                     }
                 }
             }
-
         } catch (Exception ex) {
             mu.getSimulation().println(ex);
         }
@@ -119,7 +132,9 @@ public class Props extends StarMacro {
     void setSpeed(double speed) {
         // set wave speed
         ud.physCont = mu.get.objects.physicsContinua(".*", vo);
-        vwm = ud.physCont.getModelManager().getModel(VofWaveModel.class);
+        vwm
+                = ud.physCont.getModelManager().getModel(VofWaveModel.class
+                );
         fvw = (FlatVofWave) vwm.getVofWaveManager().getObject("FlatVofWave 1");
         fvw.getCurrent().setComponents(speed, 0, 0);
         fvw.getWind().setComponents(speed, 0, 0);
@@ -132,29 +147,35 @@ public class Props extends StarMacro {
 
         // initialize number of meshes generated
         meshCount = -1;
+
     }
 
     void setHeight(double height) {
         // set heave value in parts translate operation
         tpo = (TransformPartsOperation) mu.getSimulation()
-                .get(MeshOperationManager.class).getObject("Translate");
+                .get(MeshOperationManager.class
+                ).getObject("Translate");
         tc = (TranslationControl) tpo.getTransforms().getObject("Heave");
         tc.getTranslationVector().setCoordinate(
                 ud.unit_in, ud.unit_in, ud.unit_in,
                 new DoubleVector(new double[]{0.0, 0.0, -height}));
+
     }
 
     void setTrim(double trim) {
         // set trim angle in parts rotate operation
         tpo = (TransformPartsOperation) mu.getSimulation()
-                .get(MeshOperationManager.class).getObject("Rotate");
+                .get(MeshOperationManager.class
+                ).getObject("Rotate");
         rc = (RotationControl) tpo.getTransforms().getObject("Pitch");
         rc.getAngle().setValue(trim);
 
         // Move outer refinement zone to follow motion due to trim
-        tpo = (TransformPartsOperation) mu.getSimulation()
-                .get(MeshOperationManager.class)
-                .getObject("Translate_Refine_Outer");
+        tpo
+                = (TransformPartsOperation) mu.getSimulation()
+                        .get(MeshOperationManager.class
+                        )
+                        .getObject("Translate_Refine_Outer");
         tc = (TranslationControl) tpo.getTransforms().getObject("Translate");
         tc.getTranslationVector().setCoordinate(
                 ud.unit_in, ud.unit_in, ud.unit_in,
@@ -207,8 +228,10 @@ public class Props extends StarMacro {
                 StaticDeclarations.Vars.MFR, mfr, ud.unit_kgps);
 
         // set prop rotation speed
-        rm = (RotatingMotion) mu.getSimulation().get(
-                MotionManager.class).getObject("Rotation");
+        rm
+                = (RotatingMotion) mu.getSimulation().get(
+                        MotionManager.class
+                ).getObject("Rotation");
         rm.getRotationRate().setValue(rpm);
 
         // set number of timesteps
@@ -220,33 +243,44 @@ public class Props extends StarMacro {
     }
 
     void run(double speed, double height, double trim, double rpm) {
+        // set volume mesh repr for all displayers
+        for (Displayer d : mu.get.scenes.allDisplayers(vo)) {
+            d.setRepresentation(mu.get.mesh.fvr());
+        }
+        
+        // run
         mu.step(numSteps);
+
+        // output csv data
         ud.simTitle = rev + "_" + speed + "mph_" + trim + "deg_"
                 + height + "in_" + rpm + "rpm";
         fileName = ud.simPath + slash + ud.simTitle;
+        MonitorPlot propPlot = (MonitorPlot) mu.get.plots.byREGEX("Prop", vo);
+        propPlot.export(fileName + "_prop.csv", ",");
+        MonitorPlot gcPlot = (MonitorPlot) mu.get.plots.byREGEX("Gearcase", vo);
+        gcPlot.export(fileName + "_gc.csv", ",");
+        
         mu.saveSim();
     }
 
     void exportScene() {
         // export pressure coeff 3d scene
+        fileName = ud.simPath + slash + ud.simTitle;
         ud.scene = mu.get.scenes.byREGEX("Scalar Scene", vo);
         ud.scene.export3DSceneFileAndWait(
                 fileName + ".sce", ud.simTitle,
-                "Pressure Coefficient", true, false);
+                "Pressure Coefficient", false, false);
+        
+        // write prop plot as picture (doesn't work with software rendering)
+        mu.io.write.picture(mu.get.plots.byREGEX("Prop", vo),
+                ud.simTitle, ud.picResX, ud.picResY, vo);
 
         // clear solution history
         mu.clear.solutionHistory();
-
     }
 
-    void exportData(double speed, double height, double trim, double rpm)
+    void CreateResultSS(double speed, double height, double trim, double rpm)
             throws Exception {
-        // 
-        // export data to csv
-        MonitorPlot propPlot = (MonitorPlot) mu.get.plots.byREGEX("Prop", vo);
-        propPlot.export(fileName + "_prop.csv", ",");
-        MonitorPlot gcPlot = (MonitorPlot) mu.get.plots.byREGEX("Gearcase", vo);
-        gcPlot.export(fileName + "_gc.csv", ",");
 
         // create results spreadsheet if not already created
         ssTitle = ud.simPath + slash + rev + "_results.xls";
@@ -255,8 +289,7 @@ public class Props extends StarMacro {
         }
 
         // open existing results spreadsheet and create new row
-        //ud.numToAve = (int) (360 / stepSize);
-        ud.numToAve = 5;
+        ud.numToAve = (int) (360 / stepSize);
         wb = WorkbookFactory.create(new File(ssTitle));
         sheet = wb.getSheet("Data");
         int currentRow = sheet.getLastRowNum() + 1;
@@ -268,6 +301,7 @@ public class Props extends StarMacro {
         row.createCell(4).setCellValue(rpm);
 
         // read in prop data
+        fileName = ud.simPath + slash + ud.simTitle;
         reader = new CSVReader(new FileReader(fileName + "_prop.csv"));
         data = reader.readAll();
 
@@ -318,16 +352,18 @@ public class Props extends StarMacro {
         data = reader.readAll();
 
         // Compute mean and standard deviation of gc data
+        reportIterator = 1;
         stats = new SummaryStatistics();
         for (columnIterator = gcColStart;
-                columnIterator <= gcColStart + numGcReports; columnIterator++) {
+                columnIterator < gcColStart + numGcReports; columnIterator++) {
             for (rowIterator = data.size() - 1;
                     rowIterator >= data.size() - ud.numToAve; rowIterator--) {
                 String[] array = data.get(rowIterator);
-                stats.addValue(Double.parseDouble(array[columnIterator]));
+                stats.addValue(Double.parseDouble(array[reportIterator]));
             }
             row.createCell(columnIterator).setCellValue(stats.getMean());
-            stats = new SummaryStatistics(); // clear report data
+            stats = new SummaryStatistics();
+            reportIterator++;
         }
 
         // save spreadsheet

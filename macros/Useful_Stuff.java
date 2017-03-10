@@ -4,6 +4,7 @@ import macroutils.*;
 import star.common.*;
 import star.meshing.*;
 import star.motion.*;
+import star.vis.*;
 
 public class Useful_Stuff extends StarMacro {
 
@@ -32,6 +33,10 @@ public class Useful_Stuff extends StarMacro {
         // get autosave
         AutoSave as = mu.getSimulation().getSimulationIterator().getAutoSave();
 
+        // set volume mesh repr for all displayers
+        for (Displayer d : mu.get.scenes.allDisplayers(vo)) {
+            d.setRepresentation(mu.get.mesh.fvr());
+        }
     }
 
     void initMacro() {
