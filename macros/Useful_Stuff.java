@@ -30,8 +30,9 @@ public class Useful_Stuff extends StarMacro {
         // get value of report
         ud.rep.getReportMonitorValue();
 
-        // get autosave
-        AutoSave as = mu.getSimulation().getSimulationIterator().getAutoSave();
+        // disable autosave
+        mu.getSimulation().getSimulationIterator()
+                .getAutoSave().getStarUpdate().setEnabled(false);
 
         // set volume mesh repr for all displayers
         for (Displayer d : mu.get.scenes.allDisplayers(vo)) {

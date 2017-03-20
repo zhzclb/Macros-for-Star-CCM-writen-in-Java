@@ -24,14 +24,36 @@ public class Test extends StarMacro {
 
     public void execute() {
         initMacro();
-        
-        MonitorPlot propPlot = (MonitorPlot) mu.get.plots.byREGEX("Prop", vo);
-        propPlot.export(ud.simPath + "\\" + "prop.csv", ",");
-        
+
+        int version = 1;
+        double[][] subAreaRatios = {
+            {0.8856, 0.7886, 0.6715},
+            {0.8740, 0.7787, 0.6650},
+            {0.8978, 0.7992, 0.6785},
+            {0.8856, 0.7886, 0.6716},
+            {0.8856, 0.7886, 0.6715},
+            {0.8856, 0.7885, 0.6714},
+            {0.8856, 0.7887, 0.6716},
+            {0.8856, 0.7886, 0.6715},
+            {0.8856, 0.7886, 0.6715},
+            {0.8853, 0.7880, 0.6707},
+            {0.8859, 0.7892, 0.6724},
+            {0.8855, 0.7885, 0.6713},
+            {0.8857, 0.7887, 0.6717},
+            {0.8856, 0.7886, 0.6715},
+            {0.8856, 0.7886, 0.6715}
+        };
+        double[] subAreaRatio = new double[subAreaRatios[0].length];
+        for (int i = 0; i < subAreaRatios[0].length; i++) {
+            subAreaRatio[i] = subAreaRatios[version][i];
+        }
+
+        mu.io.say.value("Submerged Area Ratio",
+                Arrays.toString(subAreaRatio), null, vo);
 
     }
 
-    void initMacro() {
+void initMacro() {
         mu = new MacroUtils(getSimulation(), intrusive);
         ud = mu.userDeclarations;
     }

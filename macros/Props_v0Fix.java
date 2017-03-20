@@ -21,7 +21,7 @@ import star.vof.*;
 import star.motion.*;
 import star.vis.Displayer;
 
-public class Props extends StarMacro {
+public class Props_v0Fix extends StarMacro {
 
     //--------------------------------------------------------------------------
     // -- USER INPUTS --
@@ -29,10 +29,9 @@ public class Props extends StarMacro {
     // NOTE: be sure to go through this script and check that all the strings
     //       match the object names inside your simulation file (i.e. c-sys,
     //       boundary names, mesh operation names, etc.)
-    boolean linux = true;
+    boolean linux = false;
     int version = 0;
-    int hubVersion = 1;
-    String versionFileHeader = "6036_hub_v" + hubVersion;
+    String versionFileHeader = "6036_v" + version;
     double[][] subAreaRatios = {
         {0.8856, 0.7886, 0.6715},
         {0.8740, 0.7787, 0.6650},
@@ -142,25 +141,25 @@ public class Props extends StarMacro {
         try {
             initMacro();
             for (double speed : speeds) {
-                setSpeed(speed);
+//                setSpeed(speed);
 
                 for (double height : heights) {
-                    setHeight(height);
+//                    setHeight(height);
 
                     for (double trim : trims) {
-                        setTrim(trim);
-                        setCsys(height, trim);
+//                        setTrim(trim);
+//                        setCsys(height, trim);
 
                         for (double rpm : rpms) {
-                            setRpm(rpm);
-                            ud.simTitle = versionFileHeader + "_"
-                                    + speed + "mph_"
-                                    + trim + "deg_"
-                                    + height + "in_"
-                                    + rpm + "rpm";
+//                            setRpm(rpm);
+                            ud.simTitle = versionFileHeader + "_" + 
+                                    speed + "mph_" + 
+                                    trim + "deg_"
+                                    + height + "in_" + 
+                                    rpm + "rpm";
                             fileName = ud.simPath + slash + ud.simTitle;
-                            run(speed, height, trim, rpm);
-                            exportScene();
+//                            run(speed, height, trim, rpm);
+//                            exportScene();
                             CreateResultSS(speed, height, trim, rpm);
                         }
                     }

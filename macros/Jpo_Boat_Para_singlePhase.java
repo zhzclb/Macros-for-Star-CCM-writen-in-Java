@@ -20,10 +20,6 @@ import star.vof.*;
 
 public class Jpo_Boat_Para_singlePhase extends StarMacro {
 
-    /* STATIC PITCH AND HEAVE */
-    double pitch0 = .8; // deg
-    double waterline = 25.5; // in
-
     /* RUN MATRIX */
     // vary heave 24.5, 25.5, 26.5
     double[] speedsForward = {.25, .5, 1, 2, 3, 5}; // fps
@@ -149,7 +145,7 @@ public class Jpo_Boat_Para_singlePhase extends StarMacro {
         rcRoll = (RotationControl) tpo.getTransforms().getObject("roll");
         rcRoll.getAngle().setValue(roll);
         rcPitch = (RotationControl) tpo.getTransforms().getObject("pitch");
-        rcPitch.getAngle().setValue(pitch0 + pitch);
+        rcPitch.getAngle().setValue(pitch);
         rcYaw = (RotationControl) tpo.getTransforms().getObject("yaw");
         rcYaw.getAngle().setValue(yaw);
 
