@@ -14,102 +14,62 @@ import org.apache.commons.math3.stat.descriptive.*;
 import org.apache.poi.ss.usermodel.*;
 import com.opencsv.CSVReader;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import star.base.neo.DoubleVector;
+import star.flow.VelocityMagnitudeProfile;
 import star.meshing.*;
 import star.vis.*;
 import star.vof.*;
 
-public class Jpo_Boat_Para_singlePhase extends StarMacro {
+public class Jpo_Boat_Para_SinglePhase extends StarMacro {
+
+    /* RUN TITLE */
+    String title = "310slx_hydro";
 
     /* RUN MATRIX */
-    // vary heave 24.5, 25.5, 26.5
-    double[] speedsForward = {.25, .5, 1, 2, 3, 5}; // fps
-    double[] speedsAft = {.25, .5, 1, 2}; // fps
-    double[] speedsSway = {.25, .5, 1, 2}; // fps
-    double[] speedsOblique = {.25, .5, 1, 2}; // fps
-    double[] staticRolls = {0, 3, 6, 9, 12, 20}; // deg
-    double[] dynRolls = {-12, -6, 6, 12}; // deg
-    double[] pitches = {-2, -1, 0, 1, 2}; // deg
+    double[] sinks = {24.5, 25.5, 26.5}; // in
+    double[] pitches = {-.2, .8, 1.8}; // deg
+    double[] yaws = {0., 22.5, 45, 67.5, 90., 112.5, 135., 157.5, 180.};
+    double[] speedsForward = {.25, .5, 1, 2, 3, 5, 10}; // fps
+    double[] speedsAngle = {.25, .5, 1, 2}; // fps
+    double[] speeds;
 
-    double runTime = 100;
+    double roll = 0.;
+    int iterations = 500;
     int resx = 1200;
     int resy = 700;
 
     public void execute() {
 
         initMacro();
-        staticRollStability();
-        staticPitchStability();
-        rollResistance();
-        forwardMotion();
-        aftMotion();
-        swayMotion();
-        obliqueMotion();
+        for (double sink : sinks) {
 
-    }
+            for (double pitch : pitches) {
 
-    void staticRollStability() {
-        title = "staticRollStability";
-        for (double roll : staticRolls) {
-            run(roll, 0, 0, 0);
-        }
-    }
-
-    void staticPitchStability() {
-        title = "staticPitchStability";
-        for (double pitch : pitches) {
-            run(0, pitch, 0, 0);
-        }
-    }
-
-    void rollResistance() {
-        title = "rollResistance";
-        yaw = 90.;
-        for (double roll : dynRolls) {
-            run(roll, 0, yaw, 1);
-        }
-    }
-
-    void forwardMotion() {
-        title = "forwardMotion";
-        for (double speed : speedsForward) {
-            run(0, 0, 0, speed);
-        }
-    }
-
-    void aftMotion() {
-        title = "aftMotion";
-        for (double speed : speedsAft) {
-            run(0, 0, 180, speed);
-        }
-    }
-
-    void swayMotion() {
-        title = "swayMotion";
-        for (double speed : speedsSway) {
-            run(0, 0, 90, speed);
-        }
-    }
-
-    void obliqueMotion() {
-        title = "obliqueMotion";
-        for (double speed : speedsOblique) {
-            run(0, 0, 45, speed);
-        }
-
-    }
-
-    void run(double roll, double pitch, double yaw, double speed) {
-        ud.simTitle = title
-                + "_roll" + roll
-                + "_pitch" + pitch
-                + "_yaw" + yaw
-                + "_speed" + speed;
-        pre(roll, pitch, yaw, speed);
-        solve();
-        try {
-            post();
-        } catch (Exception ex) {
-            mu.getSimulation().println(ex);
+                for (double yaw : yaws) {
+                    pre(sink, pitch, yaw);
+                    if (yaw == 0.) {
+                        speeds = speedsForward;
+                    } else {
+                        speeds = speedsAngle;
+                    }
+                    mu.io.say.value("speeds", Arrays.toString(speeds), null, vo);
+                    
+                    for (double speed : speeds) {
+                        ud.simTitle = title
+                                + "_sink" + sink
+                                + "_roll" + roll
+                                + "_pitch" + pitch
+                                + "_yaw" + yaw
+                                + "_speed" + speed;
+                        solve(speed);
+                        try {
+                            post(sink, pitch, yaw, speed);
+                        } catch (Exception ex) {
+                            mu.getSimulation().println(ex);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -117,27 +77,12 @@ public class Jpo_Boat_Para_singlePhase extends StarMacro {
         mu = new MacroUtils(getActiveSimulation());
         ud = mu.userDeclarations;
         ud.defUnitLength = ud.unit_in;
+        ud.defColormap = mu.get.objects.colormap(
+                StaticDeclarations.Colormaps.BLUE_RED);
+      
     }
 
-    void pre(double roll, double pitch, double yaw, double speed) {
-        if (mu.check.has.volumeMesh()) {
-            return;
-        }
-        // set inlet speed
-        ud.physCont = mu.get.objects.physicsContinua(".*", vo);
-        vwm = ud.physCont.getModelManager().getModel(VofWaveModel.class);
-        fvw = (FlatVofWave) vwm.getVofWaveManager().getObject("FlatVofWave 1");
-        fvw.getCurrent().setComponents(-speed, 0, 0);
-        fvw.getWind().setComponents(-speed, 0, 0);
-
-        // set timestep
-        if (speed == 0.0) {
-            tStep = .5 / (.5 * 12) * 2;
-        } else {
-            tStep = .5 / (speed * 12) * 2;
-        }
-        mu.set.solver.timestep(tStep);
-        ud.numToAve = (int) (runTime / 10 / tStep);
+    void pre(double sink, double pitch, double yaw) {
 
         // set boat orientation
         tpo = (TransformPartsOperation) mu.getSimulation()
@@ -148,36 +93,65 @@ public class Jpo_Boat_Para_singlePhase extends StarMacro {
         rcPitch.getAngle().setValue(pitch);
         rcYaw = (RotationControl) tpo.getTransforms().getObject("yaw");
         rcYaw.getAngle().setValue(yaw);
+        tcSink = (TranslationControl) tpo.getTransforms().getObject("sink");
+        tcSink.getTranslationVector().setCoordinate(ud.unit_in, ud.unit_in, ud.unit_in, new DoubleVector(new double[]{0., 0., sink}));
 
+        // set c-sys orientation
+        sinkCsys = (CartesianCoordinateSystem) ud.lab0
+                .getLocalCoordinateSystemManager().getObject("sink");
+        // sink
+        sinkCsys.getOrigin().setCoordinate(ud.unit_in, ud.unit_in, ud.unit_in,
+                new DoubleVector(new double[]{
+            0.0, 0.0, sink}));
+        // yaw
+        yawCsys = (CartesianCoordinateSystem) sinkCsys
+                .getLocalCoordinateSystemManager().getObject("yaw");
+        yawCsys.setBasis0(new DoubleVector(new double[]{
+            Math.cos(yaw * Math.PI / 180),
+            Math.sin(yaw * Math.PI / 180),
+            0.0
+        }));
+        // roll
+        rollTrimCsys = (CartesianCoordinateSystem) yawCsys
+                .getLocalCoordinateSystemManager().getObject("roll_trim");
+        rollTrimCsys.setBasis1(new DoubleVector(new double[]{
+            0.0,
+            Math.cos(roll * Math.PI / 180),
+            Math.sin(roll * Math.PI / 180)
+        }));
+        // trim
+        rollTrimCsys.setBasis0(new DoubleVector(new double[]{
+            Math.cos(pitch * Math.PI / 180),
+            0.0,
+            Math.sin(-pitch * Math.PI / 180)
+        }));
+
+        mu.clear.solution();
         mu.update.volumeMesh();
     }
 
-    void solve() {
-        if (mu.check.has.solution()) {
-            return;
-        }
-        mu.get.solver.stoppingCriteria_MaxTime().setMaximumTime(runTime);
-        mu.run();
-        mu.saveSim();
-    }
+    void solve(double speed) {
+        // set inlet speed
+        mu.get.boundaries.byREGEX("inlet", vo).getValues()
+                .get(VelocityMagnitudeProfile.class).getMethod(
+                ConstantScalarProfileMethod.class).getQuantity()
+                .setValue(speed);
 
-    void post() throws Exception {
-
+        mu.step(iterations);
         for (Displayer d : mu.get.scenes.allDisplayers(vo)) {
             d.setRepresentation(mu.get.mesh.fvr());
         }
-        // export waterline 3d scene
-        ud.scene = mu.get.scenes.byREGEX("waterline", vo);
-        ud.scene.export3DSceneFileAndWait(
-                ud.simPath + "/" + ud.simTitle + ".sce", "waterline",
-                "", true, false);
+        mu.saveSim();
+    }
 
+    void post(double sink, double pitch, double yaw, double speed) throws Exception {
         // export plots
-        ud.picPath = ud.simPath + "/" + ud.simTitle;
-        mu.io.write.plots();
+        //ud.picPath = ud.simPath + "/" + ud.simTitle;
+        //mu.io.write.plots();
 
         // export waterline 2d scene
-        mu.io.write.picture(ud.scene, "waterline", resx, resy, vo);
+        ud.scene = mu.get.scenes.byREGEX("waterline", vo);
+        mu.io.write.picture(ud.scene, ud.simTitle, resx, resy, vo);
 
         // update excel with numerical results
         String ssTitle = ud.simPath + "/results.xls";
@@ -185,48 +159,47 @@ public class Jpo_Boat_Para_singlePhase extends StarMacro {
             wb = new HSSFWorkbook();
             sheet = wb.createSheet("data");
             row = sheet.createRow(0);
-            row.createCell(0).setCellValue("Run");
-            for (i = 0; i < reports.length; i++) {
+            row.createCell(0).setCellValue("Sink");
+            row.createCell(1).setCellValue("Pitch");
+            row.createCell(2).setCellValue("Yaw");
+            row.createCell(3).setCellValue("Speed");
+            
+            for (i = 4; i < reports.length; i++) {
                 row.createCell(i + 1).setCellValue(reports[i]);
                 out = new FileOutputStream(ssTitle);
                 wb.write(out);
                 out.close();
             }
         }
-
+        // open existing wb
         wb = WorkbookFactory.create(new File(ssTitle));
         sheet = wb.getSheet("data");
         int currentRow = sheet.getLastRowNum() + 1;
         row = sheet.createRow(currentRow);
-        row.createCell(0).setCellValue(ud.simTitle);
-        resultsCol = 1;
+        // create row headers
+        row.createCell(0).setCellValue(sink);
+        row.createCell(1).setCellValue(pitch);
+        row.createCell(2).setCellValue(yaw);
+        row.createCell(3).setCellValue(speed);
+ 
+        resultsCol = 4;
         for (String rep : reports) {
-            ud.mon = mu.get.monitors.byREGEX(rep, vo);
-            String fileName = ud.simPath + "/" + ud.simTitle + ".csv";
-            ud.mon.export(fileName);
-            reader = new CSVReader(new FileReader(fileName));
-            data = reader.readAll();
-            stats = new SummaryStatistics();
-            for (i = data.size() - 1; i >= data.size() - ud.numToAve; i--) {
-                String[] rowData = data.get(i);
-                stats.addValue(Double.parseDouble(rowData[1]));
-            }
-            row.createCell(resultsCol).setCellValue(stats.getMean());
+            ud.rep = mu.get.reports.byREGEX(rep, vo);
+            row.createCell(resultsCol).setCellValue(
+                    ud.rep.getReportMonitorValue());
             resultsCol++;
         }
         out = new FileOutputStream(ssTitle);
         wb.write(out);
         out.close();
 
-        mu.clear.solution();
-        mu.clear.meshes();
+        mu.clear.solutionHistory();
     }
 
-    private MacroUtils mu;
-    private UserDeclarations ud;
+    MacroUtils mu;
+    UserDeclarations ud;
     boolean vo = true;
 
-    String title;
     Double yaw;
     List<String[]> data;
     Workbook wb;
@@ -239,7 +212,7 @@ public class Jpo_Boat_Para_singlePhase extends StarMacro {
     int i;
     int resultsCol;
     double tStep;
-    String[] reports = {"Fx", "Fy", "Fz", "Mx", "My", "Mz"};
+    String[] reports = {"Fx", "Fy", "Fz", "Mx", "My", "Mz", "Lift", "Drag"};
 
     VofWaveModel vwm;
     FlatVofWave fvw;
@@ -247,4 +220,9 @@ public class Jpo_Boat_Para_singlePhase extends StarMacro {
     RotationControl rcRoll;
     RotationControl rcPitch;
     RotationControl rcYaw;
+    TranslationControl tcSink;
+    CartesianCoordinateSystem sinkCsys;
+    CartesianCoordinateSystem yawCsys;
+    CartesianCoordinateSystem rollTrimCsys;
+
 }
