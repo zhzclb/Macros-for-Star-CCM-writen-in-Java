@@ -37,7 +37,7 @@ public class Jpo_Boat_Para_SinglePhase extends StarMacro {
     int iterations = 500;
     int resx = 1200;
     int resy = 700;
-
+    
     public void execute() {
 
         initMacro();
@@ -46,13 +46,11 @@ public class Jpo_Boat_Para_SinglePhase extends StarMacro {
             for (double pitch : pitches) {
 
                 for (double yaw : yaws) {
-                    pre(sink, pitch, yaw);
                     if (yaw == 0.) {
                         speeds = speedsForward;
                     } else {
                         speeds = speedsAngle;
                     }
-                    mu.io.say.value("speeds", Arrays.toString(speeds), null, vo);
                     
                     for (double speed : speeds) {
                         ud.simTitle = title
@@ -61,7 +59,6 @@ public class Jpo_Boat_Para_SinglePhase extends StarMacro {
                                 + "_pitch" + pitch
                                 + "_yaw" + yaw
                                 + "_speed" + speed;
-                        solve(speed);
                         try {
                             post(sink, pitch, yaw, speed);
                         } catch (Exception ex) {
@@ -80,68 +77,6 @@ public class Jpo_Boat_Para_SinglePhase extends StarMacro {
         ud.defColormap = mu.get.objects.colormap(
                 StaticDeclarations.Colormaps.BLUE_RED);
       
-    }
-
-    void pre(double sink, double pitch, double yaw) {
-
-        // set boat orientation
-        tpo = (TransformPartsOperation) mu.getSimulation()
-                .get(MeshOperationManager.class).getObject("Transform");
-        rcRoll = (RotationControl) tpo.getTransforms().getObject("roll");
-        rcRoll.getAngle().setValue(roll);
-        rcPitch = (RotationControl) tpo.getTransforms().getObject("pitch");
-        rcPitch.getAngle().setValue(pitch);
-        rcYaw = (RotationControl) tpo.getTransforms().getObject("yaw");
-        rcYaw.getAngle().setValue(yaw);
-        tcSink = (TranslationControl) tpo.getTransforms().getObject("sink");
-        tcSink.getTranslationVector().setCoordinate(ud.unit_in, ud.unit_in, ud.unit_in, new DoubleVector(new double[]{0., 0., sink}));
-
-        // set c-sys orientation
-        sinkCsys = (CartesianCoordinateSystem) ud.lab0
-                .getLocalCoordinateSystemManager().getObject("sink");
-        // sink
-        sinkCsys.getOrigin().setCoordinate(ud.unit_in, ud.unit_in, ud.unit_in,
-                new DoubleVector(new double[]{
-            0.0, 0.0, sink}));
-        // yaw
-        yawCsys = (CartesianCoordinateSystem) sinkCsys
-                .getLocalCoordinateSystemManager().getObject("yaw");
-        yawCsys.setBasis0(new DoubleVector(new double[]{
-            Math.cos(yaw * Math.PI / 180),
-            Math.sin(yaw * Math.PI / 180),
-            0.0
-        }));
-        // roll
-        rollTrimCsys = (CartesianCoordinateSystem) yawCsys
-                .getLocalCoordinateSystemManager().getObject("roll_trim");
-        rollTrimCsys.setBasis1(new DoubleVector(new double[]{
-            0.0,
-            Math.cos(roll * Math.PI / 180),
-            Math.sin(roll * Math.PI / 180)
-        }));
-        // trim
-        rollTrimCsys.setBasis0(new DoubleVector(new double[]{
-            Math.cos(pitch * Math.PI / 180),
-            0.0,
-            Math.sin(-pitch * Math.PI / 180)
-        }));
-
-        mu.clear.solution();
-        mu.update.volumeMesh();
-    }
-
-    void solve(double speed) {
-        // set inlet speed
-        mu.get.boundaries.byREGEX("inlet", vo).getValues()
-                .get(VelocityMagnitudeProfile.class).getMethod(
-                ConstantScalarProfileMethod.class).getQuantity()
-                .setValue(speed);
-
-        mu.step(iterations);
-        for (Displayer d : mu.get.scenes.allDisplayers(vo)) {
-            d.setRepresentation(mu.get.mesh.fvr());
-        }
-        mu.saveSim();
     }
 
     void post(double sink, double pitch, double yaw, double speed) throws Exception {

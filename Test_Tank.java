@@ -1,10 +1,10 @@
 
 /**
- * Propeller parametric simulation
+ * Varies rpm, mfr, and timestep for a propeller in a test tank
  *
  * @author Andrew Gunderson
  *
- * 2017, v11.06
+ * 2017, v12.02
  */
 
 import star.common.*;
@@ -13,12 +13,12 @@ import star.motion.*;
 import java.math.*;
 
 public class Test_Tank extends StarMacro {
-
-    //double[] rpms = {343, 714, 1000, 1714};
-    double[] rpms = {2286, 2857};
-    double mfr_wot = 0.3; // kgps
+    
+    //double[] rpms = {343, 714, 1000, 1714, 2286, 2857};
+    double[] rpms = {1000, 2286};
+    double mfr_wot = 0.0; // kgps
     double deg = 5;
-    double stop = 25; // stopping criteria (s)
+    double stop = 10; // stopping criteria (s)
 
     public void execute() {
         varyRPM();

@@ -38,6 +38,10 @@ public class Useful_Stuff extends StarMacro {
         for (Displayer d : mu.get.scenes.allDisplayers(vo)) {
             d.setRepresentation(mu.get.mesh.fvr());
         }
+        
+        // set preferred units
+        Units units = null;
+        units.setPreferred(true);
     }
 
     void initMacro() {
